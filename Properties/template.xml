@@ -1,0 +1,22 @@
+<?xml version="1.0" standalone="yes"?>
+
+<?program_dtd version="1"?>
+
+<PROGRAM EXE_FORMAT="Raw Binary">
+  <INFO_SOURCE />
+  <DATATYPES />
+  <MEMORY_MAP />
+  <REGISTER_VALUES />
+  <CODE />
+  <DATA />
+  <EQUATES />
+  <COMMENTS />
+  <PROPERTIES />
+  <BOOKMARKS />
+  <PROGRAM_ENTRY_POINTS />
+  <RELOCATION_TABLE />
+  <SYMBOL_TABLE />
+  <FUNCTIONS />
+  <MARKUP />
+  <EXT_LIBRARY_TABLE />
+</PROGRAM>

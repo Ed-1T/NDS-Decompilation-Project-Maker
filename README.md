@@ -4,7 +4,7 @@ A tool to create an XML decompilation project from a Nintendo DS ROM
 # Usage
 - Select an input ROM
 - Select an output path (a new folder is preferred as, depending on the ROM and the settings, a lot of files could be created)
-- Select a symbols.x file (optional, each symbol must be defined like this: "*<symbol name>* = 0x*<hex address>*;")
+- Select a symbols.x file (optional, each symbol must be defined like this: "[symbol name] = 0x[hex address];")
 - Click **Generate**
 
 # Settings

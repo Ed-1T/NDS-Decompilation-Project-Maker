@@ -68,9 +68,8 @@ namespace NDSDecompilationProjectMaker
 			try
 			{
 				Util.ROMPath = InputPath;
-				Util.SymbolsPath = OutputPath;
-				Util.InputPath = Path.GetDirectoryName(Util.ROMPath);
-				Util.OutputPath = Path.GetDirectoryName(Util.SymbolsPath);
+				Util.InputPath = Path.GetDirectoryName(InputPath);
+				Util.OutputPath = OutputPath;
 			}
 			catch (Exception)
 			{

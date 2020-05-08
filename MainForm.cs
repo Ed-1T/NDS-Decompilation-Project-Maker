@@ -101,8 +101,7 @@ namespace NDSDecompilationProjectMaker
 				Util.UpdateSettings();
 
 				// create directory if it doesn't exist
-				if (!Directory.Exists(Util.OutputPath))
-					Directory.CreateDirectory(Util.OutputPath);
+				Directory.CreateDirectory(Util.OutputPath);
 
 				Stopwatch stopwatch = new Stopwatch();
 				stopwatch.Start();

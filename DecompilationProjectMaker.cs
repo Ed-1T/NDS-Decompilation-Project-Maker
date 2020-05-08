@@ -302,7 +302,7 @@ namespace NDSDecompilationProjectMaker
 		}
 		public void DefineFunctionsFromFile(string path)
 		{
-			if (path == string.Empty)
+			if (!File.Exists(path))
 				return;
 
 			bool duplicates = ParseSymbolFile(path, out Dictionary<uint, string> symbols);

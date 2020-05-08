@@ -127,6 +127,7 @@ namespace NDSDecompilationProjectMaker
 						// I'll just make it an overlay
 						maker.CreateARM7MemorySections(arm7);
 						maker.CreateOverlayMemorySections(overlays);
+						maker.FillMemoryGaps();
 						maker.CreateSectionManual("shared_wram", 0x3000000, 0x1000000);
 
 						maker.CreateSectionManual("io_ports", 0x4000000, 0x1000000);

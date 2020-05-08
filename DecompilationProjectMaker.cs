@@ -73,6 +73,8 @@ namespace NDSDecompilationProjectMaker
 		private MemorySection[] ARM7Sections;
 		private MemorySection[] OverlaySections;
 
+		private List<MemorySection> ARM9MemoryGaps;
+
 		// main functions
 		public void CreateXmlDocument()
 		{
@@ -235,8 +237,8 @@ namespace NDSDecompilationProjectMaker
 
 			if (section.info.bssSize != 0)
 			{
-				var sec = Xml_CreateMemorySection(name + ".bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
-				var frg = Xml_CreateFragment(name + ".bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
+				var sec = Xml_CreateMemorySection(name + "_bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
+				var frg = Xml_CreateFragment(name + "_bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
 				
 				if (Util.FillBSS)
 				{
@@ -261,6 +263,7 @@ namespace NDSDecompilationProjectMaker
 		}
 		public void CreateStandardMemorySections(MemorySection[] sections)
 		{
+			ARM9Sections = sections;
 			foreach (MemorySection sec in sections)
 				CreateMemorySection(sec, false);
 		}
@@ -288,6 +291,42 @@ namespace NDSDecompilationProjectMaker
 
 			mmap.Add(sec);
 			tree.Add(frg);
+		}
+		public void FillMemoryGaps()
+		{
+			// the program currently creates 
+			// sections like this:
+			// ---------------------------------------
+			// code section 1
+			// bss section 1
+			//					<----
+			// code section 2
+			// bss section 2
+			// ...				<----
+			// this function fills the gaps that might 
+			// appear between bss and code sections
+
+			ARM9MemoryGaps = new List<MemorySection>();
+			ARM9MemoryGaps.AddRange((MemorySection[])ARM9Sections.Clone());
+			ARM9MemoryGaps = ARM9MemoryGaps.OrderBy(o => o.GetAddress()).ToList();
+
+			uint lastEnd = uint.MaxValue;
+			string lastName = "";
+
+			foreach (var sec in ARM9MemoryGaps)
+			{
+				if (sec.GetAddress() >= 0x27E0000)
+					break;
+
+				if (lastEnd != uint.MaxValue)
+				{
+					CreateSectionManual(lastName, lastEnd, sec.GetAddress() - lastEnd);
+				}
+				lastEnd = sec.GetAddress() + sec.GetSize();
+				lastName = sec.name + "_free";
+			}
+
+			CreateSectionManual(lastName, lastEnd, 0x27E0000 - lastEnd);
 		}
 
 		// symbol definition functions

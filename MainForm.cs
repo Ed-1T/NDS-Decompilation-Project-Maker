@@ -100,17 +100,17 @@ namespace NDSDecompilationProjectMaker
 			{
 				Util.UpdateSettings();
 
-				// create directory if it doesn't exist
-				Directory.CreateDirectory(Util.OutputPath);
-
 				Stopwatch stopwatch = new Stopwatch();
 				stopwatch.Start();
 
-				rom = new NDS.ROM();
-				if (rom.IsValid())
+				try
 				{
-					try
-					{
+					// create directory if it doesn't exist
+					Directory.CreateDirectory(Util.OutputPath);
+
+					rom = new NDS.ROM();
+					if (rom.IsValid())
+					{ 
 						rom.Init();
 
 						//MemorySection[] binaries = rom.GetBinarySections();
@@ -145,16 +145,17 @@ namespace NDSDecompilationProjectMaker
 						stopwatch.Stop();
 						long elapsedTime = stopwatch.ElapsedMilliseconds;
 						Status.SetStatusText(string.Format("Done! [{0:d} ms]", elapsedTime));
+
 					}
-					catch (Exception ex)
+					else
 					{
-						Status.SetStatusText(ex.Message);
+						Status.SetStatusText("Invalid ROM! (bad nintendo logo)");
 						Status.StartVisualFeedback();
 					}
 				}
-				else
+				catch (Exception ex)
 				{
-					Status.SetStatusText("Invalid ROM! (bad nintendo logo)");
+					Status.SetStatusText(ex.Message);
 					Status.StartVisualFeedback();
 				}
 			}

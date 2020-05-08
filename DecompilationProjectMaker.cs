@@ -19,6 +19,7 @@ namespace NDSDecompilationProjectMaker
 			this.info = info;
 			this.name = name;
 			this.data = data;
+			Rename();
 		}
 		public MemorySection(uint startAddress, uint size, uint bssSize, string name, byte[] data)
 		{
@@ -27,6 +28,24 @@ namespace NDSDecompilationProjectMaker
 			info.bssSize = bssSize;
 			this.name = name;
 			this.data = data;
+			Rename();
+		}
+
+		private void Rename()
+		{
+			if (Util.AutoNameSections)
+			{
+				if (info.startAddress < Util.Main.rom.ARM9.Info.ramAddress)
+					name = "arm9_itcm";
+				else if (info.startAddress == Util.Main.rom.ARM9.Info.ramAddress)
+					name = "arm9_crt0";
+				else if (info.startAddress == Util.Main.rom.ARM7.Info.ramAddress)
+					name = "arm7_crt0";
+			}
+		}
+		public bool ContainsAddress(uint address)
+		{
+			return (address >= GetAddress()) && (address < GetAddress() + GetSize());
 		}
 
 		public uint GetAddress()
@@ -50,6 +69,9 @@ namespace NDSDecompilationProjectMaker
 	public class DecompilationProjectMaker
 	{
 		public XDocument Document { get; private set; }
+		private MemorySection[] ARM9Sections;
+		private MemorySection[] ARM7Sections;
+		private MemorySection[] OverlaySections;
 
 		// main functions
 		public void CreateXmlDocument()
@@ -191,15 +213,6 @@ namespace NDSDecompilationProjectMaker
 			var tree = prg.Element("PROGRAM_TREES").Element("TREE");
 
 			string name = section.name;
-			if (Util.AutoNameSections)
-			{
-				if (section.info.startAddress < Util.Main.rom.ARM9.Info.ramAddress)
-					name = "arm9_itcm";
-				else if (section.info.startAddress == Util.Main.rom.ARM9.Info.ramAddress)
-					name = "arm9_crt0";
-				else if (section.info.startAddress == Util.Main.rom.ARM7.Info.ramAddress)
-					name = "arm7_crt0";
-			}
 
 			if (section.info.size != 0)
 			{
@@ -253,11 +266,13 @@ namespace NDSDecompilationProjectMaker
 		}
 		public void CreateOverlayMemorySections(MemorySection[] sections)
 		{
+			OverlaySections = sections;
 			foreach (MemorySection sec in sections)
 				CreateMemorySection(sec, true, sec.name);
 		}
 		public void CreateARM7MemorySections(MemorySection[] sections)
 		{
+			ARM7Sections = sections;
 			foreach (MemorySection sec in sections)
 				CreateMemorySection(sec, true, "arm7");
 		}
@@ -300,12 +315,29 @@ namespace NDSDecompilationProjectMaker
 			CreateFunction(rom.ARM9.Info.entryAddress, "_start");
 			CreateFunction(rom.ARM7.Info.entryAddress, "_start_arm7", "arm7_crt0");
 		}
+		private string FindOverlayName(uint address)
+		{
+			foreach (var s in ARM7Sections)
+			{
+				if (s.ContainsAddress(address))
+					return s.name;
+			}
+
+			foreach (var s in OverlaySections)
+			{
+				if (s.ContainsAddress(address))
+					return s.name;
+			}
+
+			return "";
+		}
 		public void DefineFunctionsFromFile(string path)
 		{
 			if (!File.Exists(path))
 				return;
 
-			bool duplicates = ParseSymbolFile(path, out Dictionary<uint, string> symbols);
+			bool duplicates = ParseSymbolFile(path, out Dictionary<string, string> symbols);
+			string lastOverlay = "";
 
 			// save duplicate free symbols file 
 			if (duplicates)
@@ -317,7 +349,16 @@ namespace NDSDecompilationProjectMaker
 				foreach (var v in symbols)
 				{
 					string name = v.Value;
-					uint address = v.Key;
+					DecodeAddressOverlayString(v.Key, out uint address, out string overlay);
+
+					if (overlay != lastOverlay && overlay != string.Empty)
+					{
+						lastOverlay = overlay;
+
+						writer.WriteLine();
+						writer.WriteLine("/* {0:s} */", lastOverlay);
+						writer.WriteLine();
+					}
 
 					writer.WriteLine("{0:s} = 0x{1:X8};", name, address);
 					Console.WriteLine("writing: '{0:S}' => '{1:X}'", v.Value, v.Key);
@@ -329,29 +370,64 @@ namespace NDSDecompilationProjectMaker
 			foreach (var v in symbols)
 			{
 				string name = v.Value;
-				uint address = v.Key;
+				DecodeAddressOverlayString(v.Key, out uint address, out string overlay);
+
+				if (overlay == "arm9")
+					overlay = "";
+
+				// arm7 sections are overlays, 
+				// so they need to be named accordingly
+				if (overlay.StartsWith("arm7"))
+					overlay = FindOverlayName(address);
 
 				// create symbols / functions
-				CreateSymbol(address, name);
+				CreateSymbol(address, name, overlay);
 				if (Util.SymbolsAsFunctions)
-					CreateFunction(address, name);
+					CreateFunction(address, name, overlay);
 
 				Console.WriteLine("'{0:S}' => '{1:X}'", v.Value, v.Key);
 			}
 		}
-		private bool ParseSymbolFile(string path, out Dictionary<uint, string> result)
+
+		private string EncodeAddressOverlayString(uint address, string overlay)
+		{
+			return string.Format("@{0:s}@{1:X8}", overlay, address);
+		}
+		private void DecodeAddressOverlayString(string encoded, out uint address, out string overlay)
+		{
+			address = 0;
+			overlay = "";
+
+			// worst case: "@@00000000"
+			if (encoded.Length > 10)
+			{
+				int addressPos = encoded.IndexOf('@', 1) + 1;
+
+				overlay = encoded.Substring(1, addressPos - 2);
+				string sAddress = encoded.Substring(addressPos);
+				address = uint.Parse(sAddress, System.Globalization.NumberStyles.HexNumber);
+
+				Console.WriteLine("encoded: {0:s}", encoded);
+				Console.WriteLine("address at: {0:D}", addressPos);
+				Console.WriteLine("overlay: {0:s}", overlay);
+				Console.WriteLine("address: {0:X}", address);
+			}
+		}
+
+		private bool ParseSymbolFile(string path, out Dictionary<string, string> result)
 		{
 			string[] lines = File.ReadLines(path).ToArray();
 
 			//------ address symbol name(s)
-			Dictionary<uint, List<string>> symbols = new Dictionary<uint, List<string>>();
-			List<uint> duplicates = new List<uint>();
+			Dictionary<string, List<string>> symbols = new Dictionary<string, List<string>>();
+			List<string> duplicates = new List<string>();
 
 			Status.InitProgress();
 			Status.DivideProgress(lines.Length);
 
 			int i = 0;
 			bool duplicatesFound = false;
+			string lastOverlay = "arm9";
 
 			foreach (string line in lines)
 			{
@@ -362,25 +438,35 @@ namespace NDSDecompilationProjectMaker
 				if (l == string.Empty)
 					continue;
 
-				if (!ParseSymbolString(line, out string name, out uint address))
+				if (!ParseSymbolString(line, out string name, out uint address, out string overlay))
 					continue;
 
-				// store duplicates
-				if (symbols.ContainsKey(address))
+				if (overlay != lastOverlay && overlay != string.Empty)
 				{
-					if (!symbols[address].Contains(name))
+					lastOverlay = overlay;
+					continue;
+				}
+
+				// we encode overlay and address since there could be multiple
+				// symbols with the same address but in different overlays
+				string encoded = EncodeAddressOverlayString(address, lastOverlay);
+
+				// store duplicates
+				if (symbols.ContainsKey(encoded))
+				{
+					if (!symbols[encoded].Contains(name))
 					{
-						symbols[address].Add(name);
-						if(!duplicates.Contains(address))
-							duplicates.Add(address);
+						symbols[encoded].Add(name);
+						if(!duplicates.Contains(encoded))
+							duplicates.Add(encoded);
 					}
 
 					duplicatesFound = true;
 				}
 				else
 				{
-					symbols[address] = new List<string>();
-					symbols[address].Add(name);
+					symbols[encoded] = new List<string>();
+					symbols[encoded].Add(name);
 				}
 
 				Status.IncrementProgress();
@@ -388,7 +474,7 @@ namespace NDSDecompilationProjectMaker
 
 			Status.FillProgress();
 
-			result = new Dictionary<uint, string>();
+			result = new Dictionary<string, string>();
 
 			// fix duplicates
 			if (duplicatesFound)
@@ -399,7 +485,7 @@ namespace NDSDecompilationProjectMaker
 				dfw.Init(symbols, duplicates);
 				dfw.ShowDialog(Util.Main);
 
-				Dictionary<uint, string> unique = dfw.GetResult();
+				Dictionary<string, string> unique = dfw.GetResult();
 
 				foreach (var v in symbols)
 				{
@@ -424,17 +510,35 @@ namespace NDSDecompilationProjectMaker
 
 			return duplicatesFound;
 		}
-		private bool ParseSymbolString(string input, out string output, out uint address)
+		private bool ParseSymbolString(string input, out string output, out uint address, out string overlay)
 		{
 			output = "";
 			address = 0;
+			overlay = "";
 
 			// remove all whitespaces
 			input = input.Replace(" ", "");
 
+			Console.WriteLine("line: '{0:s}'", input);
+
 			// skip comment lines
 			if (input[0] == '/' && input[1] == '*')
-				return false;
+			{
+				int len = input.Length;
+				if (input[len - 1] != '/' || input[len - 2] != '*')
+					return false;
+
+				len = input.Length - 4;
+				string ov = input.Substring(2, len);
+
+				if (ov.Length < 4)
+					return false;
+
+				Console.WriteLine("overlay: {0:s}", ov);
+
+				overlay = ov;
+				return true;
+			}
 
 			int i = 0;
 

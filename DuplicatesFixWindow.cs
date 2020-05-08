@@ -12,11 +12,11 @@ namespace NDSDecompilationProjectMaker
 {
 	public partial class DuplicatesFixWindow : Form
 	{
-		private Dictionary<uint, List<string>> symbols;
-		private List<uint> duplicates;
+		private Dictionary<string, List<string>> symbols;
+		private List<string> duplicates;
 
-		private List<uint> lSymbolsFixed;
-		private Dictionary<uint, string> result;
+		private List<string> lSymbolsFixed;
+		private Dictionary<string, string> result;
 
 		private int symbolsFixed;
 		private int currentSymbol;
@@ -24,8 +24,8 @@ namespace NDSDecompilationProjectMaker
 		public DuplicatesFixWindow()
 		{
 			InitializeComponent();
-			lSymbolsFixed = new List<uint>();
-			result = new Dictionary<uint, string>();
+			lSymbolsFixed = new List<string>();
+			result = new Dictionary<string, string>();
 			HintLabel.Text = "";
 		}
 
@@ -66,8 +66,8 @@ namespace NDSDecompilationProjectMaker
 
 				DuplicatesTree.Nodes.Clear();
 				TreeNode node = new TreeNode();
-				node.Text = string.Format("0x{0:X} => {1:s}", duplicates[currentSymbol], result[duplicates[currentSymbol]]);
-				node.Tag = (uint)duplicates[currentSymbol]; 
+				node.Text = string.Format("0x{0:s} => {1:s}", duplicates[currentSymbol], result[duplicates[currentSymbol]]);
+				node.Tag = (string)duplicates[currentSymbol]; 
 				DuplicatesTree.Nodes.Add(node);
 
 				HintLabel.Text = "Double-click to edit";
@@ -93,7 +93,7 @@ namespace NDSDecompilationProjectMaker
 			DuplicatesTree.EndUpdate();
 		}
 
-		public void Init(Dictionary<uint, List<string>> symbols, List<uint> duplicates)
+		public void Init(Dictionary<string, List<string>> symbols, List<string> duplicates)
 		{
 			this.symbols = symbols;
 			this.duplicates = duplicates;
@@ -112,7 +112,7 @@ namespace NDSDecompilationProjectMaker
 			UpdateTree();
 		}
 
-		public Dictionary<uint, string> GetResult()
+		public Dictionary<string, string> GetResult()
 		{
 			return result;
 		}
@@ -168,8 +168,8 @@ namespace NDSDecompilationProjectMaker
 		{
 			if (e.Node.Parent == null)
 			{
-				lSymbolsFixed.Remove((uint)e.Node.Tag);
-				result.Remove((uint)e.Node.Tag);
+				lSymbolsFixed.Remove((string)e.Node.Tag);
+				result.Remove((string)e.Node.Tag);
 				UpdateTree();
 				return;
 			}

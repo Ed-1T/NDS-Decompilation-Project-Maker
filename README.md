@@ -12,3 +12,6 @@ A tool to create an XML decompilation project from a Nintendo DS ROM
 - **Define symbols as functions**: Defines symbols from the symbols file as both symbols and functions
 - **Fill bss sections**: By default the bss sections don't have any files linked to them, enabling this option will create them
 - **Default value**: The value that fills the bss section (only available if **Fill bss sections** is enabled)
+
+# Credits
+- BLZ Decompressor by [CUE](https://www.romhacking.net/utilities/826/)

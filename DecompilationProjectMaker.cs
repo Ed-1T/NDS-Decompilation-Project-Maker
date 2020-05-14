@@ -219,7 +219,7 @@ namespace NDSDecompilationProjectMaker
 			if (section.info.size != 0)
 			{
 				var sec = Xml_CreateMemorySection(name, section.GetAddress(), section.GetSize(), overlay, ovname);
-				var frg = Xml_CreateFragment(name, section.GetAddress(), section.GetSize(), overlay, ovname);
+				//var frg = Xml_CreateFragment(name, section.GetAddress(), section.GetSize(), overlay, ovname);
 				
 				if (section.data != null)
 				{
@@ -232,13 +232,13 @@ namespace NDSDecompilationProjectMaker
 				}
 
 				mmap.Add(sec);
-				tree.Add(frg);
+				//tree.Add(frg);
 			}
 
 			if (section.info.bssSize != 0)
 			{
 				var sec = Xml_CreateMemorySection(name + "_bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
-				var frg = Xml_CreateFragment(name + "_bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
+				//var frg = Xml_CreateFragment(name + "_bss", section.GetBssAddress(), section.GetBssSize(), overlay, ovname);
 				
 				if (Util.FillBSS)
 				{
@@ -258,7 +258,7 @@ namespace NDSDecompilationProjectMaker
 				}
 
 				mmap.Add(sec);
-				tree.Add(frg);
+				//tree.Add(frg);
 			}
 		}
 		public void CreateStandardMemorySections(MemorySection[] sections)
@@ -287,10 +287,10 @@ namespace NDSDecompilationProjectMaker
 			var tree = prg.Element("PROGRAM_TREES").Element("TREE");
 
 			var sec = Xml_CreateMemorySection(name, address, size);
-			var frg = Xml_CreateFragment(name, address, size);
+			//var frg = Xml_CreateFragment(name, address, size);
 
 			mmap.Add(sec);
-			tree.Add(frg);
+			//tree.Add(frg);
 		}
 		public void FillMemoryGaps()
 		{
@@ -310,23 +310,31 @@ namespace NDSDecompilationProjectMaker
 			ARM9MemoryGaps.AddRange((MemorySection[])ARM9Sections.Clone());
 			ARM9MemoryGaps = ARM9MemoryGaps.OrderBy(o => o.GetAddress()).ToList();
 
+			uint size = 0;
 			uint lastEnd = uint.MaxValue;
 			string lastName = "";
 
 			foreach (var sec in ARM9MemoryGaps)
 			{
 				if (sec.GetAddress() >= 0x27E0000)
+				{
+					lastEnd = sec.GetAddress() + sec.GetSize();
 					break;
+				}
 
 				if (lastEnd != uint.MaxValue)
 				{
-					CreateSectionManual(lastName, lastEnd, sec.GetAddress() - lastEnd);
+					size = sec.GetAddress() - lastEnd;
+					if (size > 0)
+						CreateSectionManual(lastName, lastEnd, size);
 				}
 				lastEnd = sec.GetAddress() + sec.GetSize();
 				lastName = sec.name + "_free";
 			}
 
-			CreateSectionManual(lastName, lastEnd, 0x27E0000 - lastEnd);
+			size = 0x3000000 - lastEnd;
+			if (size > 0)
+				CreateSectionManual(lastName, lastEnd, size);
 		}
 
 		// symbol definition functions

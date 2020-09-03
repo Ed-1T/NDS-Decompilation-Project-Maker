@@ -10,6 +10,8 @@ using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
 
+using Microsoft.WindowsAPICodePack.Dialogs;
+
 namespace NDSDecompilationProjectMaker
 {
 	public partial class MainForm : Form
@@ -17,13 +19,15 @@ namespace NDSDecompilationProjectMaker
 		public NDS.ROM rom;
 		public DecompilationProjectMaker maker;
 
+		private OpenFileDialog InputFileDialog;
+		private CommonOpenFileDialog OutputFolderDialog;
+		private OpenFileDialog SymbolsFileDialog;
+
 		public MainForm()
 		{
 			InitializeComponent();
 
 			Util.Main = this;
-			Util.ROMPath = "";
-			Util.SymbolsPath = "";
 
 			Status.InitVisualFeedback();
 			Status.UpdatePathStatusText();
@@ -60,13 +64,22 @@ namespace NDSDecompilationProjectMaker
 			}
 
 			maker = new DecompilationProjectMaker();
+
+			InputFileDialog = new OpenFileDialog();
+			OutputFolderDialog = new CommonOpenFileDialog();
+			SymbolsFileDialog = new OpenFileDialog();
+
+			InputFileDialog.Filter = "NDS ROM Files (*.nds)|*.nds|All files (*.*)|*.*";
+			InputFileDialog.FileName = "Choose a ROM";
+			OutputFolderDialog.IsFolderPicker = true;
+			SymbolsFileDialog.FileName = "Choose a symbols file";
 		}
 
 		private void InputBrowseButton_Click(object sender, EventArgs e)
 		{
 			Status.StopVisualFeedback();
-			if (Util.InputPath != string.Empty)
-				InputFileDialog.InitialDirectory = Util.InputPath;
+			if (!string.IsNullOrEmpty(Util.InputDir))
+				InputFileDialog.InitialDirectory = Util.InputDir;
 			if (InputFileDialog.ShowDialog() == DialogResult.OK)
 			{
 				InputTextBox.Text = InputFileDialog.FileName;
@@ -76,20 +89,23 @@ namespace NDSDecompilationProjectMaker
 		private void OutputBrowseButton_Click(object sender, EventArgs e)
 		{
 			Status.StopVisualFeedback();
-			if (OutputFolderDialog.ShowDialog() == DialogResult.OK)
+			if (!string.IsNullOrEmpty(Util.OutputDir))
+				OutputFolderDialog.InitialDirectory = Util.OutputDir;
+			if (OutputFolderDialog.ShowDialog() == CommonFileDialogResult.Ok)
 			{
-				OutputTextBox.Text = OutputFolderDialog.SelectedPath;
+				OutputTextBox.Text = OutputFolderDialog.FileName;
 				Status.UpdatePath();
 			}
 		}
 		private void OpenSymbolsButton_Click(object sender, EventArgs e)
 		{
 			Status.StopVisualFeedback();
-			if (Util.InputPath != string.Empty)
-				SymbolsFileDialog.InitialDirectory = Util.InputPath;
+			if (!string.IsNullOrEmpty(Util.SymbolsDir))
+				SymbolsFileDialog.InitialDirectory = Util.SymbolsDir;
 			if (SymbolsFileDialog.ShowDialog() == DialogResult.OK)
 			{
 				Util.SymbolsPath = SymbolsFileDialog.FileName;
+				Status.UpdatePath();
 			}
 		}
 
@@ -103,10 +119,10 @@ namespace NDSDecompilationProjectMaker
 				Stopwatch stopwatch = new Stopwatch();
 				stopwatch.Start();
 
-				try
+				//try
 				{
 					// create directory if it doesn't exist
-					Directory.CreateDirectory(Util.OutputPath);
+					Directory.CreateDirectory(Util.OutputDir);
 
 					rom = new NDS.ROM();
 					if (rom.IsValid())
@@ -134,8 +150,9 @@ namespace NDSDecompilationProjectMaker
 						maker.CreateSectionManual("palette", 0x5000000, 0x1000000);
 						maker.CreateSectionManual("vram", 0x6000000, 0x1000000);
 						maker.CreateSectionManual("oam", 0x7000000, 0x1000000);
-						maker.CreateSectionManual("oam", 0x7000000, 0x1000000);
 
+						maker.DefineCommonDatatypes();
+						maker.DefineCommonData();
 						maker.DefineCommonSymbols();
 						maker.DefineCommonFunctions();
 						maker.DefineFunctionsFromFile(Util.SymbolsPath);
@@ -154,11 +171,11 @@ namespace NDSDecompilationProjectMaker
 						Status.StartVisualFeedback();
 					}
 				}
-				catch (Exception ex)
-				{
-					Status.SetStatusText(ex.Message);
-					Status.StartVisualFeedback();
-				}
+				//catch (Exception ex)
+				//{
+				//	Status.SetStatusText(ex.Message);
+				//	Status.StartVisualFeedback();
+				//}
 			}
 			else 
 			{

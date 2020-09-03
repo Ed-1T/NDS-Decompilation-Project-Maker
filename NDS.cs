@@ -20,6 +20,17 @@ namespace NDSDecompilationProjectMaker
 			public ARM.Overlay[] Overlay9;
 			public ARM.Overlay[] Overlay7;
 
+			public bool DSiGame = false;
+
+			public uint ARM9StartModuleParamsOffset;
+			public uint ARM7StartModuleParamsOffset;
+
+			public uint ARM9StartModuleParamsAddress => ARM9StartModuleParamsOffset + ARM9.Info.ramAddress;
+			public uint ARM7StartModuleParamsAddress => ARM7StartModuleParamsOffset + ARM7.Info.ramAddress;
+
+			public uint ARM9AutoloadDoneCallbackOffset;
+			public uint ARM7AutoloadDoneCallbackOffset;
+
 			private FSFilesystem fs;
 
 			readonly byte[] nLogo = {
@@ -36,7 +47,7 @@ namespace NDSDecompilationProjectMaker
 
 			public ROM()
 			{
-				Reader = new BinaryReader(File.Open(Properties.Settings.Default.romPath, FileMode.Open));
+				Reader = new BinaryReader(File.Open(Util.ROMPath, FileMode.Open));
 				fs = new FSFilesystem(this);
 			}
 
@@ -51,12 +62,17 @@ namespace NDSDecompilationProjectMaker
 				// create temp executable
 				Util.CreateDecompressor();
 
+				Reader.BaseStream.Seek(0x12, SeekOrigin.Begin);
+				byte unitCode = Reader.ReadByte();
+				DSiGame = (unitCode & 1) != 0;
+
 				// load binaries
 				LoadARM9();
 
 				if (ARM9.Info.romAddress < 0x4000)
 				{
-					throw new Exception("Homebrew ROM can't be processed");
+					Util.DeleteDecompressor();
+					throw new Exception("Homebrew ROMs can't be processed");
 				}
 
 				LoadARM7();
@@ -64,6 +80,10 @@ namespace NDSDecompilationProjectMaker
 				// load and decompress overlays
 				LoadARM9Overlays();
 				LoadARM7Overlays();
+
+				Reader.BaseStream.Seek(0x70, SeekOrigin.Begin);
+				ARM9AutoloadDoneCallbackOffset = Reader.ReadUInt32() - ARM9.Info.ramAddress;
+				ARM7AutoloadDoneCallbackOffset = Reader.ReadUInt32() - ARM7.Info.ramAddress;
 
 				// delete temp executable
 				Util.DeleteDecompressor();
@@ -121,7 +141,7 @@ namespace NDSDecompilationProjectMaker
 				{
 					// initialize progress bar
 					Status.InitProgress();
-					Status.DivideProgress(ovt.Length);
+					Status.SetMaxProgress(ovt.Length);
 				}
 
 				// read overlay table
@@ -160,7 +180,7 @@ namespace NDSDecompilationProjectMaker
 				{
 					// initialize progress bar
 					Status.InitProgress();
-					Status.DivideProgress(ovt.Length);
+					Status.SetMaxProgress(ovt.Length);
 				}
 
 				for (int i = 0; i < ovt.Length; i++)
@@ -191,45 +211,19 @@ namespace NDSDecompilationProjectMaker
 			}
 
 			// section creation
-			public uint ARM9StartModuleParamsOffset;
-			public uint ARM7StartModuleParamsOffset;
 
-			public uint ARM9StartModuleParamsAddress => ARM9StartModuleParamsOffset + ARM9.Info.ramAddress;
-			public uint ARM7StartModuleParamsAddress => ARM7StartModuleParamsOffset + ARM7.Info.ramAddress;
-
-			public long FindARM9StartModuleParams()
+			public long FindARM9StartModuleParams(long offset)
 			{
-				BinaryReader arm9 = new BinaryReader(new MemoryStream(ARM9.Data));
-
-				while (arm9.BaseStream.Position < arm9.BaseStream.Length)
-				{
-					int code = arm9.ReadInt32();
-					if ((code & 0xFFFF0000) == 0xDEC00000)
-					{
-						Console.WriteLine("first part found at {0:X}", arm9.BaseStream.Position - 4);
-						code = arm9.ReadInt32();
-						if ((code & 0xFFFF) == 0xC0DE)
-						{
-							Console.WriteLine("second part found at {0:X}", arm9.BaseStream.Position - 4);
-							long position = arm9.BaseStream.Position - 0x24;
-							Console.WriteLine("params at {0:X}", position);
-
-							arm9.Close();
-							return position;
-						}
-					}
-				}
-
-				return -1;
+				return ReadInt(ARM9.Info.romAddress + ARM9AutoloadDoneCallbackOffset - 4) - ARM9.Info.ramAddress;
 			}
 			public MemorySection[] GetARM9BinarySection()
 			{
 				// find memory section address
-				ARM9StartModuleParamsOffset = (uint)FindARM9StartModuleParams();
+				ARM9StartModuleParamsOffset = (uint)FindARM9StartModuleParams(0);
 				long pos = ARM9StartModuleParamsOffset;
 
 				if (pos < 0)
-					throw new Exception("Couldn't find the '_start_ModuleParams' table");
+					throw new Exception("Couldn't find the '_start_ModuleParams' table for the ARM9 processor");
 
 				List<MemorySection> sections = new List<MemorySection>();
 				BinaryReader arm9 = new BinaryReader(new MemoryStream(ARM9.Data));
@@ -249,7 +243,7 @@ namespace NDSDecompilationProjectMaker
 				int secCount = (int)(tableEnd - tableBegin) / 12;
 
 				Status.InitProgress();
-				Status.DivideProgress(secCount);
+				Status.SetMaxProgress(secCount);
 
 				while (tableBegin < tableEnd)
 				{
@@ -276,8 +270,7 @@ namespace NDSDecompilationProjectMaker
 			}
 			public long FindARM7StartModuleParams()
 			{
-				// should be enough
-				return ReadInt(ARM7.Info.romAddress + 0xEC) - ARM7.Info.ramAddress;
+				return ReadInt(ARM7.Info.romAddress + ARM7AutoloadDoneCallbackOffset - 4) - ARM7.Info.ramAddress;
 			}
 			public MemorySection[] GetARM7BinarySection()
 			{
@@ -286,7 +279,7 @@ namespace NDSDecompilationProjectMaker
 				long pos = ARM7StartModuleParamsOffset;
 
 				if (pos < 0)
-					throw new Exception("Couldn't find the '_start_arm7_ModuleParams' table");
+					throw new Exception("Couldn't find the '_start_ModuleParams' table for the ARM7 processor");
 
 				List<MemorySection> sections = new List<MemorySection>();
 				BinaryReader arm7 = new BinaryReader(new MemoryStream(ARM7.Data));
@@ -306,7 +299,7 @@ namespace NDSDecompilationProjectMaker
 				int secCount = (int)(tableEnd - tableBegin) / 12;
 
 				Status.InitProgress();
-				Status.DivideProgress(secCount);
+				Status.SetMaxProgress(secCount);
 
 				while (tableBegin < tableEnd)
 				{
@@ -346,7 +339,7 @@ namespace NDSDecompilationProjectMaker
 				int i = 1;
 
 				Status.InitProgress();
-				Status.DivideProgress(Overlay9.Length);
+				Status.SetMaxProgress(Overlay9.Length);
 
 				foreach (var ov in Overlay9)
 				{
@@ -365,7 +358,7 @@ namespace NDSDecompilationProjectMaker
 				i = 1;
 
 				Status.InitProgress();
-				Status.DivideProgress(Overlay7.Length);
+				Status.SetMaxProgress(Overlay7.Length);
 
 				foreach (var ov in Overlay7)
 				{

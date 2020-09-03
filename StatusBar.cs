@@ -67,9 +67,19 @@ namespace NDSDecompilationProjectMaker
 		{
 			try
 			{
-				Util.ROMPath = InputPath;
-				Util.InputPath = Path.GetDirectoryName(InputPath);
-				Util.OutputPath = OutputPath;
+				if (!string.IsNullOrEmpty(InputPath))
+				{
+					Util.ROMPath = InputPath;
+					Util.InputDir = Path.GetDirectoryName(InputPath);
+				}
+
+				if (!string.IsNullOrEmpty(OutputPath))
+					Util.OutputDir = OutputPath;
+
+				if (!string.IsNullOrEmpty(Util.SymbolsPath))
+				{
+					Util.SymbolsDir = Path.GetDirectoryName(Util.SymbolsPath);
+				}
 			}
 			catch (Exception)
 			{
@@ -117,7 +127,7 @@ namespace NDSDecompilationProjectMaker
 			Util.Main.ProgressBar.Value = 0;
 			Util.Main.ProgressBar.Maximum = 100;
 		}
-		public static void DivideProgress(int max)
+		public static void SetMaxProgress(int max)
 		{
 			Util.Main.ProgressBar.Maximum = max;
 		}

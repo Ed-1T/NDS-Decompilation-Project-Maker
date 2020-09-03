@@ -12,20 +12,33 @@ namespace NDSDecompilationProjectMaker
 {
 	public partial class DuplicatesFixWindow : Form
 	{
-		private Dictionary<string, List<string>> symbols;
-		private List<string> duplicates;
+		public struct SymbolState
+		{
+			public string address;
+			public string curSymbol;
 
-		private List<string> lSymbolsFixed;
-		private Dictionary<string, string> result;
+			public string[] symbols;
+			public bool fix;
+		}
 
-		private int symbolsFixed;
-		private int currentSymbol;
+		public SymbolState[] symbols;
+		private int numSymbolsFixed;
+		private int curSymbolIndex;
+
+		public Dictionary<string, string> result
+		{
+			get
+			{
+				Dictionary<string, string> res = new Dictionary<string, string>();
+				foreach (var s in symbols)
+					res.Add(s.address, s.curSymbol);
+				return res;
+			}
+		}
 
 		public DuplicatesFixWindow()
 		{
 			InitializeComponent();
-			lSymbolsFixed = new List<string>();
-			result = new Dictionary<string, string>();
 			HintLabel.Text = "";
 		}
 
@@ -39,20 +52,29 @@ namespace NDSDecompilationProjectMaker
 			}
 		}
 
-		private void UpdateButtons()
+		private	string GetAddressString(string adr)
 		{
-			Text = string.Format("Fixing duplicate symbols [{0:d}/{1:d}]", currentSymbol+1, duplicates.Count);
+			DecompilationProjectMaker.DecodeAddressOverlayString(adr, out uint address, out string overlay);
+			if (overlay != "")
+				overlay += "::";
+
+			return string.Format("{0:s}0x{1:X08}", overlay, address);
+		}
+
+		private void UpdateUI()
+		{
+			Text = string.Format("Fixing duplicate symbols [{0:d}/{1:d}]", curSymbolIndex+1, symbols.Length);
 
 			PreviousButton.Enabled = true;
 			PreviousButton.Image = Properties.Resources.arrow_left_e;
 			NextButton.Enabled = true;
 			NextButton.Image = Properties.Resources.arrow_right_e;
-			if (currentSymbol == 0)
+			if (curSymbolIndex == 0)
 			{
 				PreviousButton.Enabled = false;
 				PreviousButton.Image = Properties.Resources.arrow_left;
 			}
-			else if (currentSymbol == duplicates.Count - 1)
+			else if (curSymbolIndex == symbols.Length - 1)
 			{
 				NextButton.Enabled = false;
 				NextButton.Image = Properties.Resources.arrow_right;
@@ -60,14 +82,15 @@ namespace NDSDecompilationProjectMaker
 		}
 		private void UpdateTree()
 		{
-			if (lSymbolsFixed.Contains(duplicates[currentSymbol]))
+			if (symbols[curSymbolIndex].fix)
 			{
 				DuplicatesTree.BeginUpdate();
 
 				DuplicatesTree.Nodes.Clear();
 				TreeNode node = new TreeNode();
-				node.Text = string.Format("0x{0:s} => {1:s}", duplicates[currentSymbol], result[duplicates[currentSymbol]]);
-				node.Tag = (string)duplicates[currentSymbol]; 
+
+				node.Text = string.Format("{0} => {1}", GetAddressString(symbols[curSymbolIndex].address), symbols[curSymbolIndex].curSymbol);
+				node.Tag = (string)symbols[curSymbolIndex].address; 
 				DuplicatesTree.Nodes.Add(node);
 
 				HintLabel.Text = "Double-click to edit";
@@ -81,9 +104,9 @@ namespace NDSDecompilationProjectMaker
 			DuplicatesTree.BeginUpdate();
 
 			DuplicatesTree.Nodes.Clear();
-			DuplicatesTree.Nodes.Add(string.Format("0x{0:X}", duplicates[currentSymbol]));
+			DuplicatesTree.Nodes.Add(GetAddressString(symbols[curSymbolIndex].address));
 
-			foreach (var s in symbols[duplicates[currentSymbol]])
+			foreach (var s in symbols[curSymbolIndex].symbols)
 			{
 				DuplicatesTree.Nodes[0].Nodes.Add(s);
 			}
@@ -93,74 +116,46 @@ namespace NDSDecompilationProjectMaker
 			DuplicatesTree.EndUpdate();
 		}
 
-		public void Init(Dictionary<string, List<string>> symbols, List<string> duplicates)
+		public void Init(Dictionary<string, List<string>> inSymbols, List<string> inDuplicates)
 		{
-			this.symbols = symbols;
-			this.duplicates = duplicates;
-
-			if (symbols.Count == 0 || duplicates.Count == 0)
+			if (inSymbols.Count == 0 || inDuplicates.Count == 0)
 			{
 				Close();
 				return;
 			}
 
-			symbolsFixed = 0;
-			result.Clear();
+			symbols = new SymbolState[inDuplicates.Count];
 
-			UpdateEmptyEntries();
-			UpdateButtons();
+			int i = 0;
+			foreach(var adr in inDuplicates)
+			{
+				symbols[i] = new SymbolState();
+				symbols[i].address = adr;
+				symbols[i].curSymbol = "";
+				symbols[i].symbols = inSymbols[adr].ToArray();
+				symbols[i].fix = false;
+				i++;
+			}
+
+			numSymbolsFixed = 0;
+
+			UpdateUI();
 			UpdateTree();
 		}
 
-		public Dictionary<string, string> GetResult()
-		{
-			return result;
-		}
 
-		private int freeLeft;
-		private int freeRight;
-
-		private void UpdateEmptyEntries()
-		{
-			freeLeft = 1;
-			freeRight = 1;
-
-			// check for empty entries to the left
-			if (currentSymbol > 0)
-			{
-				for (int i = currentSymbol; i > 0; i--)
-				{
-					if (!lSymbolsFixed.Contains(duplicates[i]))
-						break;
-					else
-						freeLeft++;
-				}
-			}
-
-			// check for empty entries to the right
-			if (currentSymbol < duplicates.Count)
-			{
-				for (int i = currentSymbol; i < duplicates.Count; i++)
-				{
-					if (!lSymbolsFixed.Contains(duplicates[i]))
-						break;
-					else
-						freeRight++;
-				}
-			}
-		}
 		private void PreviousButton_Click(object sender, EventArgs e)
 		{
-			currentSymbol -= 1;
-			//UpdateEmptyEntries();
-			UpdateButtons();
+			curSymbolIndex -= 1;
+
+			UpdateUI();
 			UpdateTree();
 		}
 		private void NextButton_Click(object sender, EventArgs e)
 		{
-			currentSymbol += 1;
-			//UpdateEmptyEntries();
-			UpdateButtons();
+			curSymbolIndex += 1;
+
+			UpdateUI();
 			UpdateTree();
 		}
 
@@ -168,29 +163,29 @@ namespace NDSDecompilationProjectMaker
 		{
 			if (e.Node.Parent == null)
 			{
-				lSymbolsFixed.Remove((string)e.Node.Tag);
-				result.Remove((string)e.Node.Tag);
-				UpdateTree();
+				if (symbols[curSymbolIndex].fix)
+				{
+					symbols[curSymbolIndex].fix = false;
+					numSymbolsFixed--;
+					UpdateTree();
+				}
 				return;
 			}
 
-			result[duplicates[currentSymbol]] = e.Node.Text;
+			symbols[curSymbolIndex].curSymbol = e.Node.Text;
+			symbols[curSymbolIndex].fix = true;
+			numSymbolsFixed++;
 
-			symbolsFixed++;
-			lSymbolsFixed.Add(duplicates[currentSymbol]);
-
-			if (symbolsFixed >= duplicates.Count)
+			if (numSymbolsFixed >= symbols.Length)
 			{
 				Close();
 				return;
 			}
 
-			UpdateEmptyEntries();
+			if (curSymbolIndex < symbols.Length - 1)
+				curSymbolIndex++;
 
-			if (currentSymbol < duplicates.Count - 1)
-				currentSymbol++;
-
-			UpdateButtons();
+			UpdateUI();
 			UpdateTree();
 		}
 	}

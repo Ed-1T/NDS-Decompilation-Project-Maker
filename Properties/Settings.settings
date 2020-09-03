@@ -2,16 +2,13 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="NDSDecompilationProjectMaker.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="outputPath" Type="System.String" Scope="User">
+    <Setting Name="path_in" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="inputPath" Type="System.String" Scope="User">
+    <Setting Name="path_symbols" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="romPath" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
-    <Setting Name="symbolsPath" Type="System.String" Scope="User">
+    <Setting Name="path_out" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>

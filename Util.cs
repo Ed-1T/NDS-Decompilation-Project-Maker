@@ -15,44 +15,33 @@ namespace NDSDecompilationProjectMaker
 		public static MainForm Main;
 
 		// paths
-		private static string DecompressorPath
+		private static string DecompressorPath => OutputDir + @"\blz.exe";
+		public static string ROMPath;
+		public static string SymbolsPath;
+		public static string SymbolsDir
 		{
-			get => Properties.Settings.Default.outputPath + @"\blz.exe";
-		}
-
-		public static string ROMPath
-		{
-			get => Properties.Settings.Default.romPath;
+			get => Properties.Settings.Default.path_symbols;
 			set
 			{
-				Properties.Settings.Default.romPath = value;
+				Properties.Settings.Default.path_symbols = value;
 				Properties.Settings.Default.Save();
 			}
 		}
-		public static string SymbolsPath
+		public static string InputDir
 		{
-			get => Properties.Settings.Default.symbolsPath;
+			get => Properties.Settings.Default.path_in;
 			set
 			{
-				Properties.Settings.Default.symbolsPath = value;
+				Properties.Settings.Default.path_in = value;
 				Properties.Settings.Default.Save();
 			}
 		}
-		public static string InputPath
+		public static string OutputDir
 		{
-			get => Properties.Settings.Default.inputPath;
+			get => Properties.Settings.Default.path_out;
 			set
 			{
-				Properties.Settings.Default.inputPath = value;
-				Properties.Settings.Default.Save();
-			}
-		}
-		public static string OutputPath
-		{
-			get => Properties.Settings.Default.outputPath;
-			set
-			{
-				Properties.Settings.Default.outputPath = value;
+				Properties.Settings.Default.path_out = value;
 				Properties.Settings.Default.Save();
 			}
 		}
@@ -62,6 +51,8 @@ namespace NDSDecompilationProjectMaker
 		public static byte FillValue;
 		public static bool AutoNameSections;
 		public static bool SymbolsAsFunctions;
+		public static bool GenerateIORegisters;
+		public static bool ForceDSiIORegisters;
 
 		public static void UpdateSettings()
 		{
@@ -69,17 +60,19 @@ namespace NDSDecompilationProjectMaker
 			FillValue = (byte)Main.BssFillValueChooser.Value;
 			AutoNameSections = Main.AutoNameCheckBox.Checked;
 			SymbolsAsFunctions = Main.SymbolsAsFunctionsCheckBox.Checked;
+			GenerateIORegisters = Main.GenerateIORegistersCheckBox.Checked;
+			ForceDSiIORegisters = Main.ForceDSiIORegistersCheckBox.Checked;
 		}
 
 		// decompressor
 		public static void CreateDecompressor()
 		{
-			File.WriteAllBytes(Util.DecompressorPath, Properties.Resources.blz);
+			File.WriteAllBytes(DecompressorPath, Properties.Resources.blz);
 		}
 		public static bool CallDecompressor(string args)
 		{
 			Process process = new Process();
-			process.StartInfo.FileName = Util.DecompressorPath;
+			process.StartInfo.FileName = DecompressorPath;
 			process.StartInfo.Arguments = args;
 			process.StartInfo.UseShellExecute = false;
 			process.StartInfo.RedirectStandardOutput = true;
@@ -90,14 +83,14 @@ namespace NDSDecompilationProjectMaker
 			process.WaitForExit();
 
 			Console.WriteLine("decompressor called:");
-			Console.WriteLine("{0:s} {1:s}", Util.DecompressorPath, args);
+			Console.WriteLine("{0:s} {1:s}", DecompressorPath, args);
 			Console.WriteLine(output);
 
 			return process.ExitCode == 0;
 		}
 		public static void DeleteDecompressor()
 		{
-			File.Delete(Util.DecompressorPath);
+			File.Delete(DecompressorPath);
 		}
 
 		// structure reading

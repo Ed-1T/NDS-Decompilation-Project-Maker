@@ -12,7 +12,7 @@ namespace NDSDecompilationProjectMaker.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.6.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -26,48 +26,36 @@ namespace NDSDecompilationProjectMaker.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string outputPath {
+        public string path_in {
             get {
-                return ((string)(this["outputPath"]));
+                return ((string)(this["path_in"]));
             }
             set {
-                this["outputPath"] = value;
+                this["path_in"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string inputPath {
+        public string path_symbols {
             get {
-                return ((string)(this["inputPath"]));
+                return ((string)(this["path_symbols"]));
             }
             set {
-                this["inputPath"] = value;
+                this["path_symbols"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string romPath {
+        public string path_out {
             get {
-                return ((string)(this["romPath"]));
+                return ((string)(this["path_out"]));
             }
             set {
-                this["romPath"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string symbolsPath {
-            get {
-                return ((string)(this["symbolsPath"]));
-            }
-            set {
-                this["symbolsPath"] = value;
+                this["path_out"] = value;
             }
         }
     }

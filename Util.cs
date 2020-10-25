@@ -15,7 +15,7 @@ namespace NDSDecompilationProjectMaker
 		public static MainForm Main;
 
 		// paths
-		private static string DecompressorPath => OutputDir + @"\blz.exe";
+		private static string DecompressorPath => Path.Combine(Properties.Settings.Default.path_temp, "blz.exe");
 		public static string ROMPath;
 		public static string SymbolsPath;
 		public static string SymbolsDir

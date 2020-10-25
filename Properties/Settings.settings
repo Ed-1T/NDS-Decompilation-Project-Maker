@@ -11,5 +11,8 @@
     <Setting Name="path_out" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="path_temp" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\tmp</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

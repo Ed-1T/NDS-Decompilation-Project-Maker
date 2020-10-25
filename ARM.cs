@@ -24,7 +24,7 @@ namespace NDSDecompilationProjectMaker
 
 			public void TryDecompress()
 			{
-				string basepath = Properties.Settings.Default.path_in;
+				string basepath = Properties.Settings.Default.path_temp;
 				string filepath = basepath + @"\temp.bin";
 				string args = string.Format(@"-d {0:s}", filepath);
 
@@ -59,7 +59,7 @@ namespace NDSDecompilationProjectMaker
 			{
 				if (Info.IsCompressed())
 				{
-					string basepath = Properties.Settings.Default.path_in;
+					string basepath = Properties.Settings.Default.path_temp;
 					string filepath = basepath + @"\temp.bin";
 					string args = string.Format(@"-d {0:s}", filepath);
 

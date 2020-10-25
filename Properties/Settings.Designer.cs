@@ -58,5 +58,14 @@ namespace NDSDecompilationProjectMaker.Properties {
                 this["path_out"] = value;
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\tmp")]
+        public string path_temp {
+            get {
+                return ((string)(this["path_temp"]));
+            }
+        }
     }
 }

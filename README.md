@@ -12,6 +12,8 @@ A tool to create an XML decompilation project from a Nintendo DS ROM
 - **Define symbols as functions**: Defines symbols from the symbols file as both symbols and functions
 - **Fill bss sections**: By default the bss sections don't have any files linked to them, enabling this option will create them
 - **Default value**: The value that fills the bss section (only available if **Fill bss sections** is enabled)
+- **Generate IO registers**: Generates symbols for the registers in the I/O area (0x04000000-0x05000000)
+- **Force DSi IO registers**: Generates symbols for DSi-only registers even when the input ROM isn't a DSi ROM
 
 # Credits
 - BLZ Decompressor by [CUE](https://www.romhacking.net/utilities/826/)

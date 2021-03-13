@@ -15,6 +15,7 @@ namespace NDSDecompilationProjectMaker
 		public static MainForm Main;
 
 		// paths
+		private static string DecompressorDir => Properties.Settings.Default.path_temp;
 		private static string DecompressorPath => Path.Combine(Properties.Settings.Default.path_temp, "blz.exe");
 		public static string ROMPath;
 		public static string SymbolsPath;
@@ -67,6 +68,9 @@ namespace NDSDecompilationProjectMaker
 		// decompressor
 		public static void CreateDecompressor()
 		{
+			if (!Directory.Exists(DecompressorDir)) {
+				Directory.CreateDirectory(DecompressorDir);
+			}
 			File.WriteAllBytes(DecompressorPath, Properties.Resources.blz);
 		}
 		public static bool CallDecompressor(string args)
@@ -90,7 +94,9 @@ namespace NDSDecompilationProjectMaker
 		}
 		public static void DeleteDecompressor()
 		{
-			File.Delete(DecompressorPath);
+			if (Directory.Exists(DecompressorDir)) {
+				File.Delete(DecompressorPath);
+			}
 		}
 
 		// structure reading
